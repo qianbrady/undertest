@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # undertest 需要完整 git 历史
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 运行测试（标准库 unittest，零依赖）
+        run: python -m unittest discover -s tests -q
