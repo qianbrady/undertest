@@ -42,6 +42,19 @@ def is_test_file(rel: str) -> bool:
     return bool(_SPEC_RE.match(name))
 
 
+def is_test_side_file(rel: str) -> bool:
+    """是否属于测试侧文件：测试用例本体，或测试目录内的辅助文件。
+
+    测试辅助文件（__init__/conftest/fixtures/helpers 等）不算测试用例，
+    但同样不进「待补测源码」热区。
+    """
+    if is_test_file(rel):
+        return True
+    parts = rel.split("/")
+    name = parts[-1]
+    return any(p in TEST_DIR_NAMES for p in parts[:-1]) and name in TEST_AUX_FILES
+
+
 def _join(*parts: str) -> str:
     return "/".join(p for p in parts if p)
 
@@ -95,6 +108,9 @@ def test_candidates_for_source(rel: str) -> list[str]:
     if base:  # 镜像到 tests/ 子目录
         for n in names:
             cands.append(_join("tests", base, n))
+    if base:  # 包内嵌套测试目录：pkg/x.py 的对口是 pkg/tests/test_x.py
+        for n in names:
+            cands.append(_join(base, "tests", n))
     if name.endswith(tuple(sorted(JS_EXTENSIONS))):  # JS 系：__tests__/ 约定
         for n in names:
             cands.append(_join("__tests__", n))
@@ -114,8 +130,11 @@ def source_candidates_for_test(rel: str) -> list[str]:
     cands = [_join(sdir, base), base, _join("src", base), _join("lib", base)]
     for i, p in enumerate(parts[:-1]):
         if p in TEST_DIR_NAMES:
+            # 去掉测试目录段、保留其前的路径：tests/pkg/test_x.py -> pkg/x.py
+            cands.append(_join(*parts[:i], base))
+            # 去掉测试目录段、保留其后的镜像路径：tests/pkg/test_x.py -> pkg/x.py
             rest = parts[i + 1:-1]
-            cands.append(_join(*rest, base))  # tests/pkg/test_x.py -> pkg/x.py
+            cands.append(_join(*rest, base))
             break
     return list(dict.fromkeys(cands))
 
@@ -155,15 +174,15 @@ def find_hotspots(
     churn: dict[str, FileChurn],
     mapping: dict[str, list[str]],
 ) -> list[FileChurn]:
-    """计算热区：被 git 历史改动过、属于可测源码、本身不是测试文件、
-    且没有任何直接测试的文件。
+    """计算热区：被 git 历史改动过、属于可测源码、本身不是测试侧文件
+    （测试用例或测试目录内辅助文件）、且没有任何直接测试的文件。
 
     排序：commit 次数降序 -> 净增删行降序 -> 路径字典序（保证稳定输出）。
     """
     candidates = [
         fc for path, fc in churn.items()
         if is_testable_source(path)
-        and not is_test_file(path)
+        and not is_test_side_file(path)
         and not mapping.get(path)
     ]
     return sorted(candidates, key=lambda fc: (-fc.commits, -fc.net, fc.path))

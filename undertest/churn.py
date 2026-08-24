@@ -35,6 +35,15 @@ NON_TESTABLE_EXTS = frozenset({
     ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
 })
 
+#: 无扩展名 / 点文件形态的非源码文件名（工具文件、许可、说明等，不进热区）
+NON_TESTABLE_BASENAMES = frozenset({
+    "license", "copying", "authors", "notice", "changelog", "readme",
+    ".gitignore", ".gitattributes", ".gitmodules", ".dockerignore",
+    ".editorconfig",
+    "dockerfile", "procfile", "gemfile", "rakefile", "makefile",
+    "justfile", "taskfile",
+})
+
 
 @dataclass
 class FileChurn:
@@ -88,11 +97,13 @@ def is_git_repo(repo: Path) -> bool:
 
 
 def is_testable_source(rel: str) -> bool:
-    """判断相对路径是否属于“可测源码”（排除依赖目录与文档/媒体/配置类）。"""
+    """判断相对路径是否属于“可测源码”（排除依赖目录、文档/媒体/配置类与工具文件）。"""
     parts = rel.split("/")
     if any(p in NON_SOURCE_DIRS for p in parts):
         return False
     name = parts[-1]
+    if name.lower() in NON_TESTABLE_BASENAMES:
+        return False
     dot = name.rfind(".")
     ext = name[dot:].lower() if dot >= 0 else ""
     return ext not in NON_TESTABLE_EXTS

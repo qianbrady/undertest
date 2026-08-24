@@ -107,7 +107,6 @@ class SourceFilterTest(unittest.TestCase):
 
     def test_is_testable_source(self) -> None:
         self.assertTrue(is_testable_source("src/app.py"))
-        self.assertTrue(is_testable_source("Makefile"))  # 无扩展名也算源码
         self.assertFalse(is_testable_source("README.md"))  # 文档不算
         self.assertFalse(is_testable_source("package.json"))  # 配置不算
         self.assertFalse(is_testable_source("node_modules/lodash/index.js"))
@@ -115,6 +114,15 @@ class SourceFilterTest(unittest.TestCase):
         self.assertFalse(is_testable_source("__pycache__/x.pyc"))
         self.assertFalse(is_testable_source("assets/logo.png"))
         self.assertTrue(is_testable_source("pkg/sub/mod.ts"))
+        # 无扩展名/点文件形态的非源码文件
+        self.assertFalse(is_testable_source("LICENSE"))
+        self.assertFalse(is_testable_source(".gitignore"))
+        self.assertFalse(is_testable_source(".gitattributes"))
+        self.assertFalse(is_testable_source("Dockerfile"))
+        self.assertFalse(is_testable_source("Makefile"))
+        self.assertFalse(is_testable_source("CHANGELOG"))
+        # 真实的无扩展名脚本仍算源码
+        self.assertTrue(is_testable_source("run.sh"))
 
 
 if __name__ == "__main__":

@@ -57,6 +57,8 @@ class BuildMappingTest(unittest.TestCase):
         "tests/test_cfg.py",
         "pkg/sub/x.py",
         "tests/pkg/sub/test_x.py",
+        "pkg/y.py",
+        "pkg/tests/test_y.py",  # 包内嵌套测试目录
     ]
 
     def test_common_layouts(self) -> None:
@@ -67,6 +69,8 @@ class BuildMappingTest(unittest.TestCase):
         self.assertEqual(mapping["comp/core.js"], ["__tests__/core.test.js"])
         self.assertEqual(mapping["cfg.py"], ["tests/test_cfg.py"])  # 反向规则补全
         self.assertEqual(mapping["pkg/sub/x.py"], ["tests/pkg/sub/test_x.py"])  # 镜像
+        # 包内嵌套测试目录：pkg/y.py -> pkg/tests/test_y.py
+        self.assertEqual(mapping["pkg/y.py"], ["pkg/tests/test_y.py"])
 
     def test_orphan_has_no_mapping(self) -> None:
         mapping = build_mapping(self.FILES)
@@ -97,6 +101,14 @@ class HotspotTest(unittest.TestCase):
             "tests/test_d.py": FileChurn(  # 测试文件本身：改动再频繁也不进热区
                 "tests/test_d.py", commits=50, added=200, deleted=0
             ),
+            "tests/__init__.py": FileChurn(  # 测试目录辅助文件：不进热区
+                "tests/__init__.py", commits=40, added=10, deleted=0
+            ),
+            "tests/helpers.py": FileChurn(  # 测试目录辅助文件：不进热区
+                "tests/helpers.py", commits=30, added=70, deleted=0
+            ),
+            "LICENSE": FileChurn("LICENSE", commits=20, added=21, deleted=0),  # 非源码
+            ".gitignore": FileChurn(".gitignore", commits=10, added=22, deleted=0),  # 非源码
             "readme.md": FileChurn("readme.md", commits=99, added=1, deleted=0),  # 非可测源码
         }
         mapping = {"d.py": ["test_d.py"]}
@@ -106,6 +118,10 @@ class HotspotTest(unittest.TestCase):
         self.assertEqual(order, ["a.py", "b.py", "c.py"])
         self.assertNotIn("d.py", order)
         self.assertNotIn("tests/test_d.py", order)
+        self.assertNotIn("tests/__init__.py", order)
+        self.assertNotIn("tests/helpers.py", order)
+        self.assertNotIn("LICENSE", order)
+        self.assertNotIn(".gitignore", order)
         self.assertNotIn("readme.md", order)
 
     def test_empty(self) -> None:
