@@ -95,9 +95,7 @@ def test_candidates_for_source(rel: str) -> list[str]:
     if base:  # 镜像到 tests/ 子目录
         for n in names:
             cands.append(_join("tests", base, n))
-    if _test_names_for_source(name) and any(
-        name.endswith(e) for e in JS_EXTENSIONS
-    ):  # JS 系：__tests__/ 约定
+    if name.endswith(tuple(sorted(JS_EXTENSIONS))):  # JS 系：__tests__/ 约定
         for n in names:
             cands.append(_join("__tests__", n))
             if base:
