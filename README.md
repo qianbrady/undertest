@@ -79,8 +79,9 @@ HTML 报告为单文件（全部 CSS/标记内联），可直接分享或挂到 
    - `added / deleted`：净增删行；
    - `last_ts`：最近一次改动提交时间。
 2. 命名约定识别测试文件（`test_*.py` / `*_test.py` / `*.spec.js` / `*.test.js`，
-   支持 `.ts/.jsx/.tsx/.mjs/.cjs`；`tests/`、`__tests__/`、`test/` 目录按目录归属识别，
-   排除 `__init__.py` / `conftest.py` / `fixtures.py` / `helpers.py` 等辅助文件）。
+   支持 `.ts/.jsx/.tsx/.mjs/.cjs`；`tests/`、`__tests__/`、`test/` 目录按目录归属识别；
+   `tests/` 目录内的 `__init__.py` / `conftest.py` / `fixtures.py` / `helpers.py`
+   等辅助文件既不算测试用例，也不进「待补测」热区）。
 3. 双向建映射：从源码侧枚举测试候选路径，也从测试侧反推源码候选路径，
    只有仓库中真实存在的文件才算命中。
 4. 热区 = 有 git 改动记录 + 属于可测源码（排除文档/配置/媒体/二进制与
@@ -88,11 +89,13 @@ HTML 报告为单文件（全部 CSS/标记内联），可直接分享或挂到 
 
 ## 已知局限
 
-- 映射基于**命名约定**启发式，非 AST 级精确匹配：`src/app.py` ↔ `tests/test_app.py`、
-  `tests/` 下非命名约定的普通 `.py` 会被当成测试文件；对约定外的奇怪布局会漏报/误报；
+- 映射基于**命名约定**启发式，非 AST 级精确匹配：`src/app.py` ↔ `tests/test_app.py`；
+  `tests/` 等测试目录下的普通 `.py` 会被当成测试文件，`pkg/tests/` 等包内嵌套测试目录
+  仅按对等命名约定命中（`pkg/y.py` ↔ `pkg/tests/test_y.py`）；对约定外的奇怪布局会漏报/误报；
+- 文件名若字面包含 ` => ` 会被当成 git 重命名标记拆开（罕见场景，如确有此文件名可提 issue）；
 - 只统计**被 git 跟踪过**的文件（未提交到历史的工作树文件不在统计范围）；
 - 不做增量/缓存，全历史 `--numstat` 扫描在大仓库上可能较慢（可配合 `--top` 使用）；
-- 依赖本机 `git` 命令（`git -C <path> ...`）。
+- 依赖本机 `git` 命令（`git -C <path> ...`，另需 `core.quotepath=false` 以支持中文文件名）。
 
 ## Roadmap
 
