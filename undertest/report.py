@@ -66,8 +66,10 @@ def render_terminal(
         f"跟踪文件      : {summary['tracked_files']}  "
         f"(可测源码 {summary['testable_sources']}，测试文件 {summary['test_files']})"
     )
-    out.append(f"有直接测试源码: {summary['sources_with_tests']}  "
-               f"测试黑洞文件: {summary['hotspot_count'] if 'hotspot_count' in summary else len(hotspots)}")
+    out.append(
+        f"有直接测试源码: {summary['sources_with_tests']}  "
+        f"测试黑洞文件: {len(hotspots)}"
+    )
     out.append("")
     shown = hotspots[:top]
     out.append(f"测试黑洞 TOP {len(shown)}（高频改动 × 零直接测试）")
