@@ -64,7 +64,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     repo = Path(args.path).expanduser().resolve()
-    if not is_git_repo(repo):
+    try:
+        repo_ok = is_git_repo(repo)
+    except (RuntimeError, OSError) as exc:
+        print(f"错误：{exc}", file=sys.stderr)
+        return 1
+    if not repo_ok:
         print(
             f"错误：{repo} 不是 git 仓库根目录（或 git 命令不可用）。"
             "请指向仓库根路径，或先在该目录执行 git init。",

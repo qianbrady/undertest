@@ -61,19 +61,24 @@ class FileChurn:
         return self.added + self.deleted
 
 
-def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def run_git(repo: Path, *args: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:
     """在指定仓库内执行 git 命令（跨平台：git -C <path>）。
 
     ``-c core.quotepath=false`` 关闭非 ASCII 文件名的八进制转义，
-    保证中文/emoji 文件名在统计中按原样保留。
+    保证中文/emoji 文件名在统计中按原样保留。超时（默认 120s，
+    极端大仓库保护）时抛 RuntimeError，由上层转为友好报错。
     """
-    return subprocess.run(
-        ["git", "-c", "core.quotepath=false", "-C", str(repo), *args],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    try:
+        return subprocess.run(
+            ["git", "-c", "core.quotepath=false", "-C", str(repo), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"git 命令超时（>{timeout}s）：{args[0] if args else '?'}") from exc
 
 
 def is_git_repo(repo: Path) -> bool:

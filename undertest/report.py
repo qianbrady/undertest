@@ -36,7 +36,7 @@ def summarize(
     repo: Path,
     churn: dict[str, FileChurn],
     mapping: dict[str, list[str]],
-) -> dict:
+) -> dict[str, object]:
     """汇总统计信息（终端摘要与报告共用）。"""
     return {
         "repo": str(repo),
