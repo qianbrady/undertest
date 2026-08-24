@@ -53,9 +53,13 @@ class FileChurn:
 
 
 def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    """在指定仓库内执行 git 命令（跨平台：git -C <path>）。"""
+    """在指定仓库内执行 git 命令（跨平台：git -C <path>）。
+
+    ``-c core.quotepath=false`` 关闭非 ASCII 文件名的八进制转义，
+    保证中文/emoji 文件名在统计中按原样保留。
+    """
     return subprocess.run(
-        ["git", "-C", str(repo), *args],
+        ["git", "-c", "core.quotepath=false", "-C", str(repo), *args],
         capture_output=True,
         text=True,
         encoding="utf-8",

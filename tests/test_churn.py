@@ -70,6 +70,12 @@ class ChurnEdgeTest(GitFixtureTestMixin, unittest.TestCase):
         # 空格文件名完全保留
         self.assertEqual(churn["my file.py"].commits, 1)
         self.assertEqual(churn["my file.py"].added, 1)
+        # 非 ASCII（中文）文件名：core.quotepath=false 后按原样保留
+        write_file(self.repo, "统计模块.py", "ok\n")
+        commit_all(self.repo, "c6")
+        churn2 = collect_churn(self.repo)
+        self.assertIn("统计模块.py", churn2)
+        self.assertEqual(churn2["统计模块.py"].commits, 1)
 
     def test_empty_repo_no_commits(self) -> None:
         # 空仓库（无提交）：不崩溃，返回空字典
