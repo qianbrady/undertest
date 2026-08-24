@@ -6,12 +6,16 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 #: git log 每块提交记录的起始标记（自定义 --format 前缀）
 COMMIT_MARKER = "@@"
+
+#: 花括号压缩形式的重命名行：lib/{alpha.py => beta.py}suffix
+_RENAME_BRACE_RE = re.compile(r"^(.*)\{(.*) => (.*)\}(.*)$")
 
 #: 跳过这些目录里的文件（生成物 / 依赖 / 元数据，不参与统计）
 NON_SOURCE_DIRS = frozenset({
@@ -168,10 +172,19 @@ def collect_churn(repo: Path) -> dict[str, FileChurn]:
         added = int(added_s) if added_s.lstrip("-").isdigit() else 0
         deleted = int(deleted_s) if deleted_s.lstrip("-").isdigit() else 0
         if " => " in name:
-            # 重命名：[旧路径] => [新路径]
-            old, new = name.rsplit(" => ", 1)
-            _bump(stats, old.strip(), 0, 0, current_ts)
-            _bump(stats, new.strip(), added, deleted, current_ts)
+            # 重命名有两种输出形式：
+            #   全路径形式：  legacy.py => modern.py
+            #   花括号压缩：  lib/{alpha.py => beta.py}（同目录/共享前后缀时）
+            m = _RENAME_BRACE_RE.match(name)
+            if m:
+                prefix, old_tail, new_tail, suffix = m.groups()
+                old = (prefix + old_tail + suffix).strip()
+                new = (prefix + new_tail + suffix).strip()
+            else:
+                old, new = name.rsplit(" => ", 1)
+                old, new = old.strip(), new.strip()
+            _bump(stats, old, 0, 0, current_ts)
+            _bump(stats, new, added, deleted, current_ts)
         else:
             _bump(stats, name, added, deleted, current_ts)
     return stats
