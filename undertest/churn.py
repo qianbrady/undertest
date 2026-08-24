@@ -64,11 +64,23 @@ def run_git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 def is_git_repo(repo: Path) -> bool:
-    """判断路径是否为 git 仓库工作树（对非 git 目录给出友好结果而非崩溃）。"""
+    """判断路径本身是否为 git 仓库根（目录等于 `git rev-parse --show-toplevel`）。
+
+    要求「目录本身是仓库根」而非「在某个仓库工作树内」，
+    避免对仓库内子目录给出误导性结果（对非 git 目录友好返回 False 而非崩溃）。
+    """
     if not repo.exists() or not repo.is_dir():
         return False
-    proc = run_git(repo, "rev-parse", "--is-inside-work-tree")
-    return proc.returncode == 0 and proc.stdout.strip() == "true"
+    proc = run_git(repo, "rev-parse", "--show-toplevel")
+    if proc.returncode != 0:
+        return False
+    top = proc.stdout.strip()
+    if not top:
+        return False
+    try:
+        return Path(top).resolve() == repo.resolve()
+    except OSError:
+        return False
 
 
 def is_testable_source(rel: str) -> bool:

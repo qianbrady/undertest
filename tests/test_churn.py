@@ -77,11 +77,18 @@ class ChurnEdgeTest(GitFixtureTestMixin, unittest.TestCase):
         self.assertEqual(collect_churn(self.repo), {})
 
     def test_non_repo_dir(self) -> None:
+        # plain 目录没有自己的 .git（父级有仓库，但本身不是仓库根）
         plain = self._dir / "plain"
         plain.mkdir(parents=True, exist_ok=True)
         self.assertFalse(is_git_repo(plain))
         # 不存在的路径
         self.assertFalse(is_git_repo(self._dir / "nope"))
+        # 仓库内子目录也不是仓库根
+        sub = self.repo / "src"
+        sub.mkdir(parents=True, exist_ok=True)
+        self.assertFalse(is_git_repo(sub))
+        # 仓库根本身是
+        self.assertTrue(is_git_repo(self.repo))
 
     def test_run_git_returns_process(self) -> None:
         proc = run_git(self.repo, "rev-parse", "--is-inside-work-tree")
