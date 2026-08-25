@@ -1,5 +1,6 @@
 # undertest — Test Black-Hole Radar（测试黑洞雷达）
 
+[![CI](https://github.com/qianbrady/undertest/actions/workflows/ci.yml/badge.svg)](https://github.com/qianbrady/undertest/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 从 git 历史找出「高频改动 × 零直接测试」的源码文件，输出补测优先级清单。
 
 纯 Python 标准库实现，零第三方依赖，纯本地离线运行，Windows / macOS / Linux 通用。
